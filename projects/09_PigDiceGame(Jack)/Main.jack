@@ -1,0 +1,81 @@
+// the rule:	https://en.wikipedia.org/wiki/Pig_(dice_game)#Gameplay
+// Created by yixu on 2018/4/15.
+
+class Main{
+
+	function void mian() {
+      	var Player user_1;
+      	var Player user_2;
+      	var Random random;
+
+      	var int turn;
+      	var int dice;
+      	var int total;
+      	var char command;
+
+      	let user_1 = Player.new();
+      	let user_2 = Player.new();
+      	let random = Random.new(123);
+
+      	let turn = random.randRange(2);	//0 or 1
+      	let total = 0;
+
+      	while(user_1.getScores() < 100 & user_1.getScores() < 100 ) {
+
+      		//dice score: 1-6
+      		let dice = random.randRange(6) + 1;
+
+      		do Output.printString("Dice score is: ");
+      		do Output.printInt(dice);
+      		do Output.println();
+      		do Output.printString("Players' score are: ");
+      		do Output.printInt(user_1.getScores());
+      		do Output.printString(" : ");
+      		do Output.printInt(user_2.getScores());
+      		do Output.println();
+
+      		if (dice == 1) {
+      			let turn = 1 - turn;
+      			let total = 0;
+      			do Output.printString("Player gets 0 score this turn.");
+      		} else {
+
+      			let total = total + dice;
+
+      			do Output.printString("You've got ");
+      			do Output.printInt(total);
+      			do Output.printString(" scores.Wanna hold? y/n");
+      			let command = Keyboard.readChar();
+      			do Output.println();
+
+      			if (command == 'y') {
+
+      				do Output.printString("Player gets ");
+      				do Output.printInt(total);
+      				do Output.printString(" score this turn.");
+      				do Output.println();
+
+      				if (turn == 0) {
+      					user_1.addScores(total);
+      				} else {
+      					user_2.addScores(total);
+      				}
+      				let turn = 1 - turn;
+      				let total = 0;
+      			}
+      		}
+      	}
+
+      	if (user_1.getScore() >= 100) {
+      		do Output.printString("Plaer 1 win!");
+      	} else {
+      		do Output.printString("Plaer 2 win!");
+      	}
+
+      	//clear memory
+		do user_1.dispose();
+		do user_2.dispose();
+		do random.dispose();
+		return;
+    }
+}

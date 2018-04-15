@@ -1,0 +1,23 @@
+class Player {
+
+	field int score;
+
+	constructor Player new() {
+		let score = 0;
+		return this;
+	}
+
+	method void addScores(int add) {
+		let score = score + add;
+		return;
+	}
+
+	method int getScores() {
+		return score;
+	}
+
+	method void dispose(){
+		do Memory.deAlloc(this);
+		return;
+	}
+}
