@@ -5,38 +5,66 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * CodeWriter - write code to the output file.
  * Created by yixu on 2018/4/8.
  */
-public class CodeWriter {
+class CodeWriter {
 
     private final String LINE_SEPT = System.lineSeparator();
     private PrintWriter outPrinter;
     private int suffix = 0;
 
-    private final StringBuilder pushToStack = new StringBuilder()
-            .append("@SP").append(LINE_SEPT)
-            .append("A=M").append(LINE_SEPT)
-            .append("M=D").append(LINE_SEPT)
-            .append("@SP").append(LINE_SEPT)
-            .append("M=M+1").append(LINE_SEPT);
-
-    private final StringBuilder popFromStack = new StringBuilder()
-            .append("@SP").append(LINE_SEPT)
-            .append("AM=M-1").append(LINE_SEPT)
-            .append("D=M").append(LINE_SEPT);
-
-    public CodeWriter(File fileOut) {
+     CodeWriter(File fileOut, boolean needInit) {
         try {
             outPrinter = new PrintWriter(fileOut);
+            if (needInit) {
+                writeInit();
+            }
 
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
     }
 
+    //initial call, at head of output file
+    private void writeInit() {
 
-    //add sub and or eq lt gt neg not
-    public void writeArithmetic(String cmType) {
+        outPrinter.write(
+                "   //Initialize".concat(LINE_SEPT)
+
+                //SP = 256
+                .concat("@256").concat(LINE_SEPT)
+                .concat("D=A").concat(LINE_SEPT)
+                .concat("@SP").concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT));
+                /*
+                .concat("@300").concat(LINE_SEPT)
+                .concat("D=A").concat(LINE_SEPT)
+                .concat("@1").concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT)
+                //
+                .concat("@400").concat(LINE_SEPT)
+                .concat("D=A").concat(LINE_SEPT)
+                .concat("@2").concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT)
+                //
+                .concat("@3000").concat(LINE_SEPT)
+                .concat("D=A").concat(LINE_SEPT)
+                .concat("@3").concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT)
+                //
+                .concat("@3010").concat(LINE_SEPT)
+                .concat("D=A").concat(LINE_SEPT)
+                .concat("@4").concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT));
+                */
+
+        writeCall("Sys.init", 0);
+    }
+
+
+    //add sub and or, eq lt gt, neg not
+     void writeArithmetic(String cmType) {
 
         Map<String, String> writeMap = new HashMap<String, String>(){{
             put("add", "M=M+D");
@@ -47,62 +75,57 @@ public class CodeWriter {
             put("not", "M=!M");
         }};
 
-        StringBuilder sb = new StringBuilder();
-        outPrinter.write("//" + cmType +  LINE_SEPT);
-
         if ("add_sub_and_or".contains(cmType)) {
 
-            sb.append("@SP").append(LINE_SEPT)
-                    .append("AM=M-1").append(LINE_SEPT)
-                    .append("D=M").append(LINE_SEPT)
-                    .append("M=0").append(LINE_SEPT)    //reset 0
-                    .append("A=A-1").append(LINE_SEPT)
-                    .append(writeMap.get(cmType)).append(LINE_SEPT);
+            outPrinter.write(""
+                    .concat("@SP").concat(LINE_SEPT)
+                    .concat("AM=M-1").concat(LINE_SEPT)
+                    .concat("D=M").concat(LINE_SEPT)
+                    //.concat("M=0").concat(LINE_SEPT)    //reset 0
+                    .concat("A=A-1").concat(LINE_SEPT)
+                    .concat(writeMap.get(cmType)).concat(LINE_SEPT));
 
         } else if ("eq_gt_lt".contains(cmType)) {
 
-            String label = "START_" + cmType.toUpperCase() + suffix;
+            String label = "START_" + cmType.toUpperCase() + "_" + suffix;
             suffix++;
-            sb.append("@SP").append(LINE_SEPT)
-                    .append("AM=M-1").append(LINE_SEPT)
-                    .append("D=M").append(LINE_SEPT)
-                    .append("M=0").append(LINE_SEPT)    //reset 0
-                    .append("A=A-1").append(LINE_SEPT)
-                    .append("D=M-D").append(LINE_SEPT)
-                    .append("M=-1").append(LINE_SEPT)   //true
-                    .append("@").append(label).append(LINE_SEPT)
-                    .append("D;J").append(cmType.toUpperCase()).append(LINE_SEPT)
-                    .append("@SP").append(LINE_SEPT)
-                    .append("A=M-1").append(LINE_SEPT)
-                    .append("M=0").append(LINE_SEPT)    //false
-                    .append("(").append(label).append(")").append(LINE_SEPT);
+            outPrinter.write(""
+                    .concat("@SP").concat(LINE_SEPT)
+                    .concat("AM=M-1").concat(LINE_SEPT)
+                    .concat("D=M").concat(LINE_SEPT)
+                    //.concat("M=0").concat(LINE_SEPT)    //reset 0
+                    .concat("A=A-1").concat(LINE_SEPT)
+                    .concat("D=M-D").concat(LINE_SEPT)
+                    .concat("M=-1").concat(LINE_SEPT)   //true
+                    .concat("@" + label).concat(LINE_SEPT)
+                    .concat("D;J").concat(cmType.toUpperCase()).concat(LINE_SEPT)
+                    .concat("@SP").concat(LINE_SEPT)
+                    .concat("A=M-1").concat(LINE_SEPT)
+                    .concat("M=0").concat(LINE_SEPT)    //false
+                    .concat("(" + label + ")").concat(LINE_SEPT));
         } else {
             // neg not
-            sb.append("@SP").append(LINE_SEPT)
-                    .append("A=M-1").append(LINE_SEPT)  //A - address of stack[sp]
-                    .append(writeMap.get(cmType)).append(LINE_SEPT);
+            outPrinter.write(""
+                    .concat("@SP").concat(LINE_SEPT)
+                    .concat("A=M-1").concat(LINE_SEPT)  //A - address of stack[sp]
+                    .concat(writeMap.get(cmType)).concat(LINE_SEPT));
         }
-
-        outPrinter.write(sb.toString());
-        System.out.println(sb.toString());
     }
 
 
-    public String writePushPop(String command, String segment, int index) {
-
-        StringBuilder sb = new StringBuilder();
-        outPrinter.write("//" + command + " " +segment + " " + index +  LINE_SEPT);
+     void writePushPop(String command, String segment, int index) {
 
         if (segment.equals("constant")) {
             //get value(index)
-            sb.append("@").append(index).append(LINE_SEPT)
-                    .append("D=A").append(LINE_SEPT)
+            outPrinter.write(""
+                    .concat("@" + index).concat(LINE_SEPT)
+                    .concat("D=A").concat(LINE_SEPT)
                     //push to stack
-                    .append("@SP").append(LINE_SEPT)
-                    .append("A=M").append(LINE_SEPT)
-                    .append("M=D").append(LINE_SEPT)
-                    .append("@SP").append(LINE_SEPT)
-                    .append("M=M+1").append(LINE_SEPT);
+                    .concat("@SP").concat(LINE_SEPT)
+                    .concat("A=M").concat(LINE_SEPT)
+                    .concat("M=D").concat(LINE_SEPT)
+                    .concat("@SP").concat(LINE_SEPT)
+                    .concat("M=M+1").concat(LINE_SEPT));
 
         } else if ("local_argument_this_that".contains(segment)) {
             //un-direct address
@@ -115,240 +138,211 @@ public class CodeWriter {
 
             if (command.equals("push")) {
                 //get real address
-                sb.append("@").append(writeMap.get(segment)).append(LINE_SEPT)
-                        .append("D=M").append(LINE_SEPT)
-                        .append("@").append(index).append(LINE_SEPT)
-                        .append("A=D+A").append(LINE_SEPT)
+                outPrinter.write(""
+                        .concat("@").concat(writeMap.get(segment)).concat(LINE_SEPT)
+                        .concat("D=M").concat(LINE_SEPT)
+                        .concat("@" + index).concat(LINE_SEPT)
+                        .concat("A=D+A").concat(LINE_SEPT)
                         //get value
-                        .append("D=M").append(LINE_SEPT)
+                        .concat("D=M").concat(LINE_SEPT)
                         //push to stack
-                        .append("@SP").append(LINE_SEPT)
-                        .append("A=M").append(LINE_SEPT)
-                        .append("M=D").append(LINE_SEPT)
-                        .append("@SP").append(LINE_SEPT)
-                        .append("M=M+1").append(LINE_SEPT);
+                        .concat("@SP").concat(LINE_SEPT)
+                        .concat("A=M").concat(LINE_SEPT)
+                        .concat("M=D").concat(LINE_SEPT)
+                        .concat("@SP").concat(LINE_SEPT)
+                        .concat("M=M+1").concat(LINE_SEPT));
 
             } else if (command.equals("pop")) {
                 //store real address to R13
-                sb.append("@").append(writeMap.get(segment)).append(LINE_SEPT)
-                        .append("D=M").append(LINE_SEPT)
-                        .append("@").append(index).append(LINE_SEPT)
-                        .append("D=D+A").append(LINE_SEPT)
-                        .append("@R13").append(LINE_SEPT)
-                        .append("M=D").append(LINE_SEPT)
+                outPrinter.write(""
+                        .concat("@").concat(writeMap.get(segment)).concat(LINE_SEPT)
+                        .concat("D=M").concat(LINE_SEPT)
+                        .concat("@" + index).concat(LINE_SEPT)
+                        .concat("D=D+A").concat(LINE_SEPT)
+                        .concat("@R13").concat(LINE_SEPT)
+                        .concat("M=D").concat(LINE_SEPT)
                         //pop from stack
-                        .append("@SP").append(LINE_SEPT)
-                        .append("AM=M-1").append(LINE_SEPT)
-                        .append("D=M").append(LINE_SEPT)
-                        .append("M=0").append(LINE_SEPT)    //reset stack peak to 0
+                        .concat("@SP").concat(LINE_SEPT)
+                        .concat("AM=M-1").concat(LINE_SEPT)
+                        .concat("D=M").concat(LINE_SEPT)
+                        //.concat("M=0").concat(LINE_SEPT)    //reset stack peak to 0
                         //store value
-                        .append("@R13").append(LINE_SEPT)
-                        .append("A=M").append(LINE_SEPT)
-                        .append("M=D").append(LINE_SEPT)
+                        .concat("@R13").concat(LINE_SEPT)
+                        .concat("A=M").concat(LINE_SEPT)
+                        .concat("M=D").concat(LINE_SEPT));
                         //reset R13 = 0
-                        .append("@R13").append(LINE_SEPT)
-                        .append("M=0").append(LINE_SEPT);
+                        //.concat("@R13").concat(LINE_SEPT)
+                        //.concat("M=0").concat(LINE_SEPT));
             }
         } else {
-            int pos;
+
+            String pos;
             //direct address --- 3 this, 4 that; temp R5-R12; static 16-
-            if (segment.equals("pointer"))
-                pos = 3 + index;
-            else if (segment.equals("temp"))
-                pos = 5 + index;
-            else
-                pos = 16 + index;
+            switch (segment) {
+                case "pointer":
+                    pos = "" + 3 + index;
+                    break;
+                case "temp":
+                    pos = "" + 5 + index;
+                    break;
+                default:
+                    //Xxx.j
+                    pos = segment + index;
+                    break;
+            }
 
             if (command.equals("push")) {
                 //get address
-                sb.append("@").append(pos).append(LINE_SEPT)
-                        .append("D=M").append(LINE_SEPT)
+                outPrinter.write(""
+                        .concat("@" + pos).concat(LINE_SEPT)
+                        .concat("D=M").concat(LINE_SEPT)
                         //push to stack
-                        .append("@SP").append(LINE_SEPT)
-                        .append("A=M").append(LINE_SEPT)
-                        .append("M=D").append(LINE_SEPT)
-                        .append("@SP").append(LINE_SEPT)
-                        .append("M=M+1").append(LINE_SEPT);
+                        .concat("@SP").concat(LINE_SEPT)
+                        .concat("A=M").concat(LINE_SEPT)
+                        .concat("M=D").concat(LINE_SEPT)
+                        .concat("@SP").concat(LINE_SEPT)
+                        .concat("M=M+1").concat(LINE_SEPT));
 
             } else if (command.equals("pop")) {
                 //pop from stack
-                sb.append("@SP").append(LINE_SEPT)
-                        .append("AM=M-1").append(LINE_SEPT)
-                        .append("D=M").append(LINE_SEPT)
-                        .append("M=0").append(LINE_SEPT)
+                outPrinter.write(""
+                        .concat("@SP").concat(LINE_SEPT)
+                        .concat("AM=M-1").concat(LINE_SEPT)
+                        .concat("D=M").concat(LINE_SEPT)
+                        //.concat("M=0").concat(LINE_SEPT)
                         //store value
-                        .append("@").append(pos).append(LINE_SEPT)
-                        .append("M=D").append(LINE_SEPT);
+                        .concat("@" + pos).concat(LINE_SEPT)
+                        .concat("M=D").concat(LINE_SEPT));
             }
         }
-
-        outPrinter.write(sb.toString());
-        System.out.println(sb.toString());
-        return sb.toString();
     }
 
 
     //label symbol
-    protected String writeLabel(String symbol) {
-
-        StringBuilder sb = new StringBuilder();
-        outPrinter.write("//label " + symbol +  LINE_SEPT);
-
-        sb.append("(").append(symbol).append(")").append(LINE_SEPT);
-
-        outPrinter.write(sb.toString());
-        System.out.println(sb.toString());
-        return sb.toString();
+     void writeLabel(String symbol) {
+        outPrinter.write("(" + symbol + ")" + LINE_SEPT);
     }
 
-    protected String writeGoto(String symbol) {
-
-        StringBuilder sb = new StringBuilder();
-        outPrinter.write("//goto " + symbol + LINE_SEPT);
-
-        sb.append("@").append(symbol).append(LINE_SEPT)
-                .append("0;JMP").append(LINE_SEPT);
-
-        outPrinter.write(sb.toString());
-        System.out.println(sb.toString());
-        return sb.toString();
+     void writeGoto(String symbol) {
+        outPrinter.write(""
+                .concat("@" + symbol).concat(LINE_SEPT)
+                .concat("0;JMP").concat(LINE_SEPT));
     }
 
-    protected void writeIf(String symbol) {
-
-        StringBuilder sb = new StringBuilder();
-        outPrinter.write("//if-goto " + symbol +  LINE_SEPT);
+    void writeIf(String symbol) {
 
         //-1 true, jump to label
-        sb.append("@SP").append(LINE_SEPT)
-                .append("AM=M-1").append(LINE_SEPT)
-                .append("D=M").append(LINE_SEPT)
-                .append("M=0").append(LINE_SEPT)
-                .append("@").append(symbol).append(LINE_SEPT)
-                .append("D;JNE").append(LINE_SEPT);
-
-        outPrinter.write(sb.toString());
-        System.out.println(sb.toString());
+        outPrinter.write(""
+                .concat("@SP").concat(LINE_SEPT)
+                .concat("AM=M-1").concat(LINE_SEPT)
+                .concat("D=M").concat(LINE_SEPT)
+                //.concat("M=0").concat(LINE_SEPT)
+                .concat("@").concat(symbol).concat(LINE_SEPT)
+                .concat("D;JNE").concat(LINE_SEPT));
     }
 
     //numArgs >= 0
-    protected void writeCall(String funcName, int numArgs) {
+     void writeCall(String funcName, int numArgs) {
 
-        StringBuilder sb = new StringBuilder();
-        outPrinter.write("//call " + funcName + " " + numArgs + LINE_SEPT);
+        String label = "RETURN_ADDRESS_" + suffix;
+        suffix++;
+        //push RETURN_ADDRESS
+        outPrinter.write(""
+                .concat("@" + label).concat(LINE_SEPT)
+                .concat("D=A").concat(LINE_SEPT)
+                .concat("@SP").concat(LINE_SEPT)
+                .concat("A=M").concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT)
+                .concat("@SP").concat(LINE_SEPT)
+                .concat("M=M+1").concat(LINE_SEPT));
 
-        //push RETURN_ADDRESS LCL ARG THIS THAT
-        sb.append("@RETURN_ADDRESS_").append(funcName).append(LINE_SEPT)
-                .append("D=A").append(LINE_SEPT)
-                .append("@SP").append(LINE_SEPT)
-                .append("A=M").append(LINE_SEPT)
-                .append("M=D").append(LINE_SEPT)
-                .append("@SP").append(LINE_SEPT)
-                .append("M=M+1").append(LINE_SEPT)
-                .append(writePushPop("push", "local", 0))
-                .append(writePushPop("push", "argument", 0))
-                .append(writePushPop("push", "this", 0))
-                .append(writePushPop("push", "that", 0))
-                //reset ARG = SP - n - 5
-                .append("@SP").append(LINE_SEPT)
-                .append("D=M").append(LINE_SEPT)
-                .append("@").append(numArgs).append(LINE_SEPT)
-                .append("D=D-A").append(LINE_SEPT)
-                .append("@").append(5).append(LINE_SEPT)
-                .append("D=D-A").append(LINE_SEPT)
-                .append("@ARG").append(LINE_SEPT)
-                .append("A=M").append(LINE_SEPT)
-                .append("M=D").append(LINE_SEPT)
-                //reset LCL to SP
-                .append("@SP").append(LINE_SEPT)
-                .append("D=M").append(LINE_SEPT)
-                .append("@LCL").append(LINE_SEPT)
-                .append("A=M").append(LINE_SEPT)
-                .append("M=D").append(LINE_SEPT)
+        //push LCL ARG THIS THAT
+        writePushPop("push", "local", 0);
+        writePushPop("push", "argument", 0);
+        writePushPop("push", "this", 0);
+        writePushPop("push", "that", 0);
+
+        //reset ARG base address = SP - (n + 5)
+        outPrinter.write(""
+                .concat("@SP").concat(LINE_SEPT)
+                .concat("D=M").concat(LINE_SEPT)
+                .concat("@" + (numArgs + 5)).concat(LINE_SEPT)
+                .concat("D=D-A").concat(LINE_SEPT)
+                .concat("@ARG").concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT)
+                //reset LCL base address to SP
+                .concat("@SP").concat(LINE_SEPT)
+                .concat("D=M").concat(LINE_SEPT)
+                .concat("@LCL").concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT)
                 //goto f
-                .append(writeGoto(funcName))
-                .append("(RETURN_ADDRESS_").append(funcName).append(")").append(LINE_SEPT);
+                .concat("@" + funcName).concat(LINE_SEPT)
+                .concat("0;JMP").concat(LINE_SEPT)
+                //(return address)
+                .concat("(" + label + ")").concat(LINE_SEPT));
 
-        outPrinter.write(sb.toString());
-        System.out.println(sb.toString());
     }
 
-    protected void writeReturn() {
+    void writeReturn() {
 
-        StringBuilder sb = new StringBuilder();
-        outPrinter.write("//return" + LINE_SEPT);
+        outPrinter.write(""
+                //FRAME(R14) = LCL
+                .concat("@LCL").concat(LINE_SEPT)
+                .concat("D=M").concat(LINE_SEPT)
+                .concat("@R14").concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT)
+                //RET(R15) = *(FRAME - 5)
+                .concat("@5").concat(LINE_SEPT)
+                .concat("A=D-A").concat(LINE_SEPT)
+                .concat("D=M").concat(LINE_SEPT)
+                .concat("@R15").concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT));
 
-        //FRAME = LCL
-        sb.append("@LCL").append(LINE_SEPT)
-                .append("D=M").append(LINE_SEPT)
-                .append("@R11").append(LINE_SEPT)
-                .append("A=M").append(LINE_SEPT)
-                .append("M=D").append(LINE_SEPT)
-                //RET(R12) = *(FRAME - 5)
-                .append("@5").append(LINE_SEPT)
-                .append("A=D-A").append(LINE_SEPT)
-                .append("D=M").append(LINE_SEPT)
-                .append("@R12").append(LINE_SEPT)
-                .append("M=D").append(LINE_SEPT)
-                //*ARG = pop(); SP = ARG+1
-                .append(writePushPop("pop", "argument", 0))
-                .append("@ARG").append(LINE_SEPT)
-                .append("D=M").append(LINE_SEPT)
-                .append("@SP").append(LINE_SEPT)
-                .append("M=D+1").append(LINE_SEPT)
-                //
-                .append(recover("THAT"))
-                .append(recover("THIS"))
-                .append(recover("ARG"))
-                .append(recover("LCL"))
-                .append(writeGoto("R12"));
-
-        outPrinter.write(sb.toString());
-        System.out.println(sb.toString());
+        //*ARG = pop()
+        writePushPop("pop", "argument", 0);
+        //SP = ARG+1
+        outPrinter.write(""
+                 .concat("@ARG").concat(LINE_SEPT)
+                 .concat("D=M").concat(LINE_SEPT)
+                 .concat("@SP").concat(LINE_SEPT)
+                 .concat("M=D+1").concat(LINE_SEPT)
+                 //recover
+                 .concat(recover("THAT"))
+                 .concat(recover("THIS"))
+                 .concat(recover("ARG"))
+                 .concat(recover("LCL"))
+                 //goto RET(R15)
+                 .concat("@R15").concat(LINE_SEPT)
+                 .concat("A=M").concat(LINE_SEPT)
+                 .concat("0;JMP").concat(LINE_SEPT));
     }
-
     private String recover(String dest) {
-
-        return new StringBuilder()
-                .append("@R11").append(LINE_SEPT)
-                .append("AM=M-1").append(LINE_SEPT)
-                .append("D=M").append(LINE_SEPT)
-                .append("@").append(dest).append(LINE_SEPT)
-                .append("M=D").append(LINE_SEPT)
-                .toString();
+        return  ""
+                .concat("@R14").concat(LINE_SEPT)
+                .concat("AM=M-1").concat(LINE_SEPT)
+                .concat("D=M").concat(LINE_SEPT)
+                .concat("@").concat(dest).concat(LINE_SEPT)
+                .concat("M=D").concat(LINE_SEPT);
     }
 
     /* numLocals >= 0
      */
-    protected void writeFunction(String funcName, int numLocals) {
+    void writeFunction(String funcName, int numLocals) {
 
-        StringBuilder sb = new StringBuilder();
-        outPrinter.write("//function " + funcName + " " + numLocals + LINE_SEPT);
-
-        sb.append("(").append(funcName).append(")").append(LINE_SEPT)
-                .append("@0").append(LINE_SEPT)
-                .append("D=A").append(LINE_SEPT);
+        writeLabel(funcName);
+        //locals init to 0
         for (int i = 0; i < numLocals; i++) {
-            sb.append("@SP").append(LINE_SEPT)
-                    .append("A=M").append(LINE_SEPT)
-                    .append("M=D").append(LINE_SEPT)
-                    .append("@SP").append(LINE_SEPT)
-                    .append("M=M+1").append(LINE_SEPT);
+            writePushPop("push", "constant", 0);
         }
-        /*
-        sb.append("(").append(funcName).append(")").append(LINE_SEPT)
-                .append("@").append(numLocals).append(LINE_SEPT)
-                .append("D=A").append(LINE_SEPT)
-                .append("@R13").append(LINE_SEPT)
-                .append("A=M").append(LINE_SEPT)
-                .append("M=D").append(LINE_SEPT)
-        */
-
-        outPrinter.write(sb.toString());
-        System.out.println(sb.toString());
     }
 
-    public void close() {
+
+
+    void writeComment(String instruction) {
+        outPrinter.write("  //" + instruction + LINE_SEPT);
+    }
+
+     void close() {
         outPrinter.close();
     }
 }

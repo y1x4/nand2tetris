@@ -9,30 +9,35 @@ public class VmTranslator {
 
         // valid SOURCE or .vm FILE
         if (args.length != 1) {
-            System.out.println("Usage:java VmTranslator [filename|directory]");
+            System.out.println("Correct command is:java VmTranslator [filename|directory]");
         }
 
         File file;
         file = new File(args[0]);
-        //file = new File("/Users/yixu/Desktop/nand2tetris/projects/07/StackArithmetic/StackTest");
         List<File> vmFiles = new ArrayList<>();
         String fileOutPath;
 
+        boolean needInit = false;
         if (file.isFile()) {
             vmFiles.add(file);
+            if (file.getName().equals("Sys.vm"))
+                needInit = true;
             fileOutPath = file.getAbsolutePath().replace(".vm", ".asm");
         } else {
             File[] files = file.listFiles();
             assert files != null;
             for (File f : files) {
-                if (f.getName().endsWith(".vm"))
+                if (f.getName().endsWith(".vm")) {
                     vmFiles.add(f);
+                    if (f.getName().equals("Sys.vm"))
+                        needInit = true;
+                }
             }
             fileOutPath = file.getAbsolutePath() + "/" +  file.getName() + ".asm";
         }
 
         File fileOut = new File(fileOutPath);
-        CodeWriter writer = new CodeWriter(fileOut);
+        CodeWriter writer = new CodeWriter(fileOut, needInit);
         Parser parser;
 
         for (File f : vmFiles) {
@@ -40,16 +45,23 @@ public class VmTranslator {
             parser = new Parser(f);
             String cmType;
 
+            System.out.println(f.getName());
+
             //start parsing
             while (parser.hasMoreCommands()) {
 
-                parser.advance();
+                writer.writeComment(parser.advance());
                 cmType = parser.commandType();
 
                 switch (cmType) {
                     case "push":
                     case "pop":
-                        writer.writePushPop(cmType, parser.arg1(), parser.arg2());
+                        if (parser.arg1().equals("static")) {
+                            //push static 1 ---> push Xxx. 1
+                            writer.writePushPop(cmType, f.getName().replace("vm", ""), parser.arg2());
+                        } else {
+                            writer.writePushPop(cmType, parser.arg1(), parser.arg2());
+                        }
                         break;
                     case "label":
                         writer.writeLabel(parser.arg1());
@@ -79,6 +91,6 @@ public class VmTranslator {
 
         //save file
         writer.close();
-        System.out.println("File created: " + fileOutPath);
+        System.out.println("File created: " + fileOutPath + System.lineSeparator());
     }
 }
