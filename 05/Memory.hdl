@@ -30,7 +30,7 @@ CHIP Memory {
     // Put your code here:
 
     DMux4Way(in=load, sel=address[13..14], a=loadram0, b=loadram1, c=loadscr, d=loadkbd);
-	Or(a=loadram0, b=loadram1, out=loadram);
+    Or(a=loadram0, b=loadram1, out=loadram);
 
     RAM16K(in=in, load=loadram, address=address[0..13], out=ramout);
     Screen(in=in, load=loadscr, address=address[0..12], out=scrout);
