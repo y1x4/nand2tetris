@@ -9,11 +9,11 @@
 
 - [x] Project 1: Boolean Logic 
 
-> **布尔逻辑**
+> **布尔逻辑**：使用原始的 Nand 门以及由此所构建的一些复合门实现以下逻辑门：Not、And、Or/Xor、Multiplexor/Demultiplexor、多位 Not/And/Or 门、多位 Multiplexor、多位门（Multi-Way Gates）。
 
 - [x] Project 2: Boolean Arithmetic **布尔算术**
 
-- [x] Project 3: Sequential Logic **时序逻辑**
+##### - [x] Project 3: Sequential Logic **时序逻辑**
 
 - [x] Project 4: Machine Language 机器语言
 
